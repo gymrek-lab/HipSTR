@@ -212,7 +212,8 @@ public:
   bool IsProperPair()        const { return (b_->core.flag & BAM_FPROPER_PAIR) != 0;}
   bool IsFirstMate()         const { return (b_->core.flag & BAM_FREAD1)       != 0;}
   bool IsSecondMate()        const { return (b_->core.flag & BAM_FREAD2)       != 0;}
-
+  bool IsSupplementary()     const { return (b_->core.flag & BAM_FSUPPLEMENTARY)         != 0;}
+ 
   bool StartsWithSoftClip(){
     if (!built_) ExtractSequenceFields();
     if (cigar_ops_.empty())
@@ -298,7 +299,10 @@ public:
     if (ok) b_->core.flag |= BAM_FREAD2;
     else    b_->core.flag &= (~BAM_FREAD2);
   }
-
+  void SetIsSupplementary(bool ok){
+    if (ok) b_->core.flag |= BAM_FSUPPLEMENTARY;
+    else    b_->core.flag &= (~BAM_FSUPPLEMENTARY);
+  }
   /*
    *  Trim an alignment that extends too far upstream or downstream of the provided region or has low base qualities on the ends
    *  Trims until either i) the base quality exceeds the provided threshold or ii) the alignment is fully within the provided region bounds
