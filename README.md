@@ -1,4 +1,5 @@
-# HipSTR
+# HipSTR (Gymrek-lab version)
+## The original repository is no longer maintained. Gymrek-lab make a copy from the [original repository](https://github.com/tfwillems/HipSTR.git) and continues the maintenance.
 **H**aplotype **i**nference and **p**hasing for **S**hort **T**andem **R**epeats  
 ![HipSTR icon!](https://raw.githubusercontent.com/tfwillems/HipSTR/master/img/HipSTR_icon_small.png)	
 
