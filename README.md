@@ -57,7 +57,7 @@ HipSTR requires a standard c++ compiler. To obtain HipSTR, use:
 To build, use Make:
 
     cd HipSTR
-    make
+    make version && make
 
 The commands will construct an executable file called **HipSTR** in the current directory, for which you can view detailed help information by typing 
 
