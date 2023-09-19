@@ -468,6 +468,14 @@ private:
   BamCramReader& operator=(const BamCramReader& other);
 
   bool file_exists(const std::string& path){
+    if (path.rfind("gs://", 0) == 0) {
+      std::cerr << "Skippring file check for GCS path " << path.c_str() << std::endl;
+      return true;
+    }
+    if (path.rfind("s3://", 0) == 0) {
+      std::cerr << "Skippring file check for AWS path " << path.c_str() << std::endl;
+      return true;
+    }
     return (access(path.c_str(), F_OK) != -1);
   }
 

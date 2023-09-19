@@ -85,7 +85,7 @@ BamCramReader::BamCramReader(const std::string& path, std::string fasta_path)
 
   // Open the file itself
   if (!file_exists(path))
-    printErrorAndDie("File " + path + " doest not exist");
+    printErrorAndDie("File " + path + " does not exist");
   in_ = sam_open(path.c_str(), "r");
   if (in_ == NULL)
     printErrorAndDie("Failed to open file " + path);
