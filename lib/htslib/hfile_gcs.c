@@ -80,6 +80,13 @@ gcs_rewrite(const char *gsurl, const char *mode, int mode_has_colon,
         kputs(access_token, &auth_hdr);
     }
 
+    requester_pays_project = getenv("GCS_REQUESTER_PAYS_PROJECT");
+
+    if (requester_pays_project) {
+        kputs("X-Goog-User-Project: ", &requester_pays_hdr);
+        kputs(requester_pays_project, &requester_pays_hdr);
+    }
+
     if (argsp || auth_hdr.l > 0 || mode_has_colon) {
         if (! mode_has_colon) {
             kputs(mode, &mode_colon);
