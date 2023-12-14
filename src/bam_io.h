@@ -12,7 +12,7 @@
 #include <sys/stat.h>
 
 #include "htslib/bgzf.h"
-#include "htslib/cram/cram.h"
+#include "htslib/cram.h"
 #include "htslib/sam.h"
 
 #include "error.h"

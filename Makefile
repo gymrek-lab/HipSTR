@@ -5,7 +5,7 @@
 ## Default compilation flags.
 ## Override with:
 ##   make CXXFLAGS=XXXXX
-CXXFLAGS= -O3 -g -D__STDC_LIMIT_MACROS -D_FILE_OFFSET_BITS=64 -std=c++0x -DMACOSX -pthread #-pedantic -Wunreachable-code -Weverything
+CXXFLAGS= -O3 -g -D__STDC_LIMIT_MACROS -D_FILE_OFFSET_BITS=64 -std=c++0x -DMACOSX -pthread
 
 ## To create a static distribution file, run:
 ##   make static-dist
@@ -28,15 +28,13 @@ OBJ_SEQALN  := $(SRC_SEQALN:.cpp=.o)
 OBJ_DENOVO  := $(SRC_DENOVO:.cpp=.o)
 
 CEPHES_ROOT=lib/cephes
-HTSLIB_ROOT=lib/htslib
 
-LIBS              = -L./ -lm -L$(HTSLIB_ROOT)/lib -lz -L$(CEPHES_ROOT)/ -llzma -lbz2 -lcurl -lcrypto
-INCLUDE           = -Ilib -Ilib/htslib
+LIBS              = -L./ -lm -lhts -lz -L$(CEPHES_ROOT)/ -llzma -lbz2 -lcurl -lcrypto -L/usr/local/lib
+INCLUDE           = -Ilib -I/usr/local/include
 CEPHES_LIB        = lib/cephes/libprob.a
-HTSLIB_LIB        = $(HTSLIB_ROOT)/libhts.a
 
 .PHONY: all
-all: HTSLIB-all HipSTR DenovoFinder test/fast_ops_test test/haplotype_test test/read_vcf_alleles_test test/snp_tree_test test/vcf_snp_tree_test
+all: HipSTR DenovoFinder test/fast_ops_test test/haplotype_test test/read_vcf_alleles_test test/snp_tree_test test/vcf_snp_tree_test
 
 # Create a tarball with static binaries
 .PHONY: static-dist
@@ -64,23 +62,7 @@ clean:
 # Clean all compiled files
 .PHONY: clean-all
 clean-all: clean
-	cd lib/htslib && $(MAKE) clean
 	rm lib/cephes/*.o $(CEPHES_LIB)
-
-.PHONY: HTSLIB
-HTSLIB:
-	@if [ ! -d "lib/htslib" ]; then \
-		cd lib && git clone --recurse-submodules https://github.com/samtools/htslib.git && cd ..;\
-	else\
-		echo "htslib directory already exists in lib/ folder";\
-	fi
-.PHONY: HTSLIB-update
-HTSLIB-update: HTSLIB 
-	@cd lib/htslib && git pull
-
-.PHONY: HTSLIB-all
-HTSLIB-all: HTSLIB-update
-	@cd lib/htslib && autoreconf -i && ./configure --prefix="$(CURDIR)"/lib/htslib --enable-gcs --enable-s3 --enable-libcurl && make -j && make install
 
 # The GNU Make trick to include the ".d" (dependencies) files.
 # If the files don't exist, they will be re-generated, then included.
@@ -89,13 +71,13 @@ include $(subst .cpp,.d,$(SRC))
 
 # The resulting binary executable
 
-HipSTR: $(OBJ_COMMON) $(OBJ_HIPSTR) $(CEPHES_LIB) $(HTSLIB_LIB) $(OBJ_SEQALN)
+HipSTR: $(OBJ_COMMON) $(OBJ_HIPSTR) $(CEPHES_LIB) $(OBJ_SEQALN)
 	$(CXX) $(LDFLAGS) $(CXXFLAGS) $(INCLUDE) -o $@ $^ $(LIBS)
 
-DenovoFinder: $(OBJ_DENOVO) $(HTSLIB_LIB)
+DenovoFinder: $(OBJ_DENOVO)
 	$(CXX) $(LDFLAGS) $(CXXFLAGS) $(INCLUDE) -o $@ $^ $(LIBS)
 
-PhasingChecker: src/check_phasing.cpp src/region.cpp src/error.cpp src/haplotype_tracker.cpp src/version.cpp src/pedigree.cpp src/vcf_reader.cpp src/stringops.cpp $(HTSLIB_LIB)
+PhasingChecker: src/check_phasing.cpp src/region.cpp src/error.cpp src/haplotype_tracker.cpp src/version.cpp src/pedigree.cpp src/vcf_reader.cpp src/stringops.cpp
 	$(CXX) $(LDFLAGS) $(CXXFLAGS) $(INCLUDE) -o $@ $^ $(LIBS)
 
 test/haplotype_test: test/haplotype_test.cpp src/SeqAlignment/Haplotype.cpp src/SeqAlignment/HapBlock.cpp src/SeqAlignment/NeedlemanWunsch.cpp src/error.cpp src/stringops.cpp
@@ -107,13 +89,13 @@ test/em_stutter_test: test/em_stutter_test.cpp src/em_stutter_genotyper.cpp src/
 test/fast_ops_test: test/fast_ops_test.cpp src/mathops.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDE) -o $@ $^
 
-test/read_vcf_alleles_test: test/read_vcf_alleles_test.cpp src/error.cpp src/region.cpp src/vcf_input.cpp src/vcf_reader.cpp $(HTSLIB_LIB)
+test/read_vcf_alleles_test: test/read_vcf_alleles_test.cpp src/error.cpp src/region.cpp src/vcf_input.cpp src/vcf_reader.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDE) -o $@ $^ $(LIBS)
 
-test/snp_tree_test: src/snp_tree.cpp src/error.cpp test/snp_tree_test.cpp src/haplotype_tracker.cpp src/vcf_reader.cpp $(HTSLIB_LIB)
+test/snp_tree_test: src/snp_tree.cpp src/error.cpp test/snp_tree_test.cpp src/haplotype_tracker.cpp src/vcf_reader.cpp 
 	$(CXX) $(CXXFLAGS) $(INCLUDE) -o $@ $^ $(LIBS)
 
-test/vcf_snp_tree_test: test/vcf_snp_tree_test.cpp src/error.cpp src/snp_tree.cpp src/haplotype_tracker.cpp src/vcf_reader.cpp $(HTSLIB_LIB)
+test/vcf_snp_tree_test: test/vcf_snp_tree_test.cpp src/error.cpp src/snp_tree.cpp src/haplotype_tracker.cpp src/vcf_reader.cpp 
 	$(CXX) $(CXXFLAGS) $(INCLUDE) -o $@ $^ $(LIBS)
 
 # Build each object file independently
