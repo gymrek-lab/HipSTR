@@ -4,6 +4,7 @@
 #include "error.h"
 #include "stringops.h"
 
+
 std::string BuildCigarString(const std::vector<CigarOp>& cigar_data){
   std::stringstream cigar_string;
   for (auto cigar_iter = cigar_data.begin(); cigar_iter != cigar_data.end(); cigar_iter++)
