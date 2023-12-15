@@ -64,23 +64,6 @@ void BamHeader::parse_read_groups(const char *text){
   }
 }
 
-void BamCramReader::clear_cram_data_structures(){
-  if (iter_ != NULL && in_->is_cram){
-    // Change the region for the CRAM file to be a single position and iterate through all of the records
-    // We use this to deallocate the memory created during CRAM IO, as deallocation only
-    // appears to happen once the iterator reads all of the associated records for the region
-    bam1_t *b = bam_init1();
-    cram_range cur_range = in_->fp.cram->range;
-    cram_range new_range = {cur_range.refid, cur_range.start, cur_range.start+1};
-    in_->fp.cram->range  = new_range;
-    while (sam_itr_next(in_, iter_, b) >= 0){}
-    bam_destroy1(b);
-
-    hts_itr_destroy(iter_);
-    iter_ = NULL;
-  }
-}
-
 BamCramReader::BamCramReader(const std::string& path, std::string fasta_path)
   : path_(path), chrom_(""){
 
@@ -101,7 +84,7 @@ BamCramReader::BamCramReader(const std::string& path, std::string fasta_path)
       fasta[i] = fasta_path[i];
     fasta[fasta_path.size()] = '\0';
 
-    if (cram_load_reference(in_->fp.cram, fasta) < 0)
+    if (hts_set_fai_filename(in_, fasta) < 0)
       printErrorAndDie("Failed to open FASTA reference file for CRAM file");
     delete [] fasta;
   }
@@ -126,15 +109,7 @@ BamCramReader::BamCramReader(const std::string& path, std::string fasta_path)
 }
 
 BamCramReader::~BamCramReader(){
-  if (!shared_header_){
-    bam_hdr_destroy(hdr_);
-    delete header_;
-  }
-
-  clear_cram_data_structures();
-  hts_idx_destroy(idx_);
   sam_close(in_);
-
   if (iter_ != NULL)
     hts_itr_destroy(iter_);
 }
