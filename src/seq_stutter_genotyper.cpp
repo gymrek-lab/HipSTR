@@ -27,7 +27,7 @@
 #include "SeqAlignment/RepeatBlock.h"
 
 #include "cephes/cephes.h"
-#include "htslib/htslib/kfunc.h"
+#include "htslib/kfunc.h"
 
 int max_index(double* vals, unsigned int num_vals){
   int best_index = 0;
