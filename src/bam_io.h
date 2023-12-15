@@ -12,10 +12,12 @@
 #include <sys/stat.h>
 
 #include "htslib/bgzf.h"
-#include "htslib/cram/cram.h"
+#include "htslib/cram.h"
+//#include "htslib/cram/cram.h"
 #include "htslib/sam.h"
 
 #include "error.h"
+#include "unistd.h"
 
 // htslib encodes each base using a 4 bit integer
 // This array converts each integer to its corresponding base

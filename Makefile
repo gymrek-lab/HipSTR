@@ -36,7 +36,7 @@ CEPHES_LIB        = lib/cephes/libprob.a
 HTSLIB_LIB        = $(HTSLIB_ROOT)/libhts.a
 
 .PHONY: all
-all: HipSTR DenovoFinder test/fast_ops_test test/haplotype_test test/read_vcf_alleles_test test/snp_tree_test test/vcf_snp_tree_test
+all: HTSLIB-all HipSTR DenovoFinder test/fast_ops_test test/haplotype_test test/read_vcf_alleles_test test/snp_tree_test test/vcf_snp_tree_test
 
 # Create a tarball with static binaries
 .PHONY: static-dist
@@ -71,6 +71,22 @@ clean-all: clean
 # If the files don't exist, they will be re-generated, then included.
 # If this causes problems with non-gnu make (e.g. on MacOS/FreeBSD), remove it.
 include $(subst .cpp,.d,$(SRC))
+
+.PHONY: HTSLIB
+HTSLIB:
+	@if [ ! -d "lib/htslib" ]; then \
+		cd lib && git clone --recurse-submodules https://github.com/samtools/htslib.git && cd ..;cd lib/htslib && autoreconf -i && ./configure --prefix="$(CURDIR)"/lib/htslib --enable-gcs --enable-s3 --enable-libcurl; cd ../../\
+	else\
+		echo "htslib directory already exists in lib/ folder";\
+	fi
+.PHONY: HTSLIB-update
+HTSLIB-update: HTSLIB 
+	@cd lib/htslib && git pull
+
+.PHONY: HTSLIB-all
+HTSLIB-all: HTSLIB-update
+	@ make -j && make install
+
 
 # The resulting binary executable
 
