@@ -29,8 +29,8 @@ OBJ_DENOVO  := $(SRC_DENOVO:.cpp=.o)
 
 CEPHES_ROOT=lib/cephes
 
-LIBS              = -L./ -lm -lhts -lz -L$(CEPHES_ROOT)/ -llzma -lbz2 -lcurl -lcrypto -L/usr/local/lib
-INCLUDE           = -Ilib -I/usr/local/include
+LIBS              = -L/opt/homebrew/opt/openssl@3/lib -L./ -lm -lhts -lz -L$(CEPHES_ROOT)/ -llzma -lbz2 -lcurl -lcrypto -L/usr/local/lib
+INCLUDE           = -Ilib -I/usr/local/include -I/opt/homebrew/opt/openssl@3/include
 CEPHES_LIB        = lib/cephes/libprob.a
 
 .PHONY: all

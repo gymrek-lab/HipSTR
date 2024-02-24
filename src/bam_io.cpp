@@ -64,6 +64,7 @@ void BamHeader::parse_read_groups(const char *text){
   }
 }
 
+
 BamCramReader::BamCramReader(const std::string& path, std::string fasta_path)
   : path_(path), chrom_(""){
 
@@ -109,57 +110,59 @@ BamCramReader::BamCramReader(const std::string& path, std::string fasta_path)
 }
 
 BamCramReader::~BamCramReader(){
+  if (!shared_header_){
+    bam_hdr_destroy(hdr_);
+    delete header_;
+  }
+  hts_idx_destroy(idx_);
+
   sam_close(in_);
   if (iter_ != NULL)
     hts_itr_destroy(iter_);
 }
 
-bool BamCramReader::SetChromosome(const std::string& chrom){
-  iter_            = sam_itr_querys(idx_, hdr_, chrom.c_str());
-  chrom_           = chrom;
-  min_offset_      = 0;
-  reuse_first_aln_ = false;
-
+// TODO modify this to fix memory leak?
+bool BamCramReader::SetRegion(const std::string& chrom, int32_t start, int32_t end){
+  // TODO add back reuse? requires not setting end coordinate
   if (iter_ != NULL){
-    start_     = 0;
-    end_       = INT32_MAX;
+    hts_itr_destroy(iter_);
+    iter_ = NULL;
+  }
+  std::stringstream region;
+  region << chrom << ":" << start+1 << "-" << end;
+  std::string region_str = region.str();
+  
+  iter_ = sam_itr_querys(idx_, hdr_, region_str.c_str());
+  if (iter_ != NULL){
+    chrom_     = chrom;
+    start_     = start;
+    end_       = end;
     cram_done_ = false;
+
+    bool reuse_offset = (!in_->is_cram && min_offset_ != 0 && chrom.compare(chrom_) == 0 && start >= start_);
+    if (reuse_offset)
+      if (iter_->n_off == 1 && min_offset_ >= iter_->off[0].u && min_offset_ <= iter_->off[0].v)
+  iter_->off[0].u = min_offset_;
+
+    if (reuse_offset && first_aln_.GetEndPosition() > start && first_aln_.Position() < end){
+      // NOTE: min_offset_ remains unchanged, as the first valid alignment is the current first alignment
+      reuse_first_aln_ = true;
+    }
+    else {
+      min_offset_      = 0;
+      reuse_first_aln_ = false;
+    }
     return true;
   }
   else {
-    start_     = -1;
-    end_       = -1;
-    cram_done_ = true;
+    chrom_           = "";
+    start_           = -1;
+    end_             = -1;
+    min_offset_      = 0;
+    reuse_first_aln_ = false;
+    cram_done_       = true;
     return false;
   }
-}
-
-bool BamCramReader::SetRegion(const std::string& chrom, int32_t start, int32_t end){
-  bool can_reuse = (min_offset_ != 0 && chrom.compare(chrom_) == 0 && start >= start_);
-    if (can_reuse && first_aln_.GetEndPosition() > start && first_aln_.Position() < end)
-        can_reuse = false;
-    std::stringstream region;
-    region << chrom << ":" << start + 1 << "-" << end;
-    std::string region_str = region.str();
-    hts_itr_destroy(iter_); // Destroy previous allocations
-    iter_ = sam_itr_querys(idx_, hdr_, region_str.c_str());
-    if (iter_ != NULL){
-        chrom_ = chrom;
-        start_ = start;
-        end_ = end;
-        if (can_reuse){
-            if (iter_->n_off == 1 && min_offset_ >= iter_->off[0].u && min_offset_ <= iter_->off[0].v)
-                iter_->off[0].u = min_offset_;
-        }
-        min_offset_ = 0;
-        return true;
-    } else {
-        chrom_ = "";
-        start_ = -1;
-        min_offset_ = 0;
-        return false;
-    // If we can't reuse the CRAM iterator, we'll set the region as in all other cases by proceeding to the rest of the function
-    }
 }
 
 bool BamCramReader::GetNextAlignment(BamAlignment& aln){
@@ -189,7 +192,6 @@ bool BamCramReader::GetNextAlignment(BamAlignment& aln){
 
   return true;
 }
-
 
 
 bool BamCramMultiReader::SetRegion(const std::string& chrom, int32_t start, int32_t end){

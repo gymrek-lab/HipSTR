@@ -36,9 +36,6 @@ public:
   }
 };
 
-
-
-
 class BamAlignment {
 private:
   std::string bases_;
@@ -441,9 +438,6 @@ class BamMultiHeader : public BamHeader {
   const std::vector<ReadGroup>& read_groups(int file_index) const { return read_groups_by_file_[file_index]; }
 };
 
-
-
-
 class BamCramReader {
 private:
   samFile   *in_;
@@ -480,8 +474,6 @@ private:
     return (access(path.c_str(), F_OK) != -1);
   }
 
-  void clear_cram_data_structures();
-
 public:
   BamCramReader(const std::string& path, std::string fasta_path = "");
 
@@ -491,9 +483,6 @@ public:
   ~BamCramReader();
 
   bool GetNextAlignment(BamAlignment& aln);
-
-  // Prepare the BAM/CRAM for reading the entire chromosome
-  bool SetChromosome(const std::string& chrom);
   
   // Prepare the BAM/CRAM for reading all alignments overlapping the provided region
   bool SetRegion(const std::string& chrom, int32_t start, int32_t end);
@@ -509,10 +498,6 @@ public:
     hdr_           = header_->header_;
   }
 };
-
-
-
-
 
 
 class BamCramMultiReader {
@@ -573,12 +558,6 @@ class BamCramMultiReader {
 
   bool GetNextAlignment(BamAlignment& aln);
 };
-
-
-
-
-
-
 
 
 class BamWriter {
