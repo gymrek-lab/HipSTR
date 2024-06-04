@@ -1,9 +1,15 @@
 # HipSTR (Gymrek-lab version)
 ## This is fork of the [original repository](https://github.com/tfwillems/HipSTR.git) maintained by the Gymrek Lab.
-**H**aplotype **i**nference and **p**hasing for **S**hort **T**andem **R**epeats  
-![HipSTR icon!](https://raw.githubusercontent.com/tfwillems/HipSTR/master/img/HipSTR_icon_small.png)	
 
-#### Author: Thomas Willems <hipstrtool@gmail.com> <br> License: GNU v2
+We have also developed [TRTools](https://trtools.readthedocs.io/en/stable/index.html) which has many useful utilities for processing output from HipSTR and other TR genotypers including filtering, merging, and computing basic statistics on VCF files with STR genotypes
+
+For questions on this HipSTR fork, please contact mgymrek@ucsd.edu, or feel free to submit issues or pull requests for suggested changes.
+
+**H**aplotype **i**nference and **p**hasing for **S**hort **T**andem **R**epeats 
+
+![HipSTR icon!](https://raw.githubusercontent.com/tfwillems/HipSTR/master/img/HipSTR_icon_small.png)    
+
+#### Author of the original HipSTR: Thomas Willems <hipstrtool@gmail.com> <br> License: GNU v2
 
 [Introduction](#introduction)  
 [Requirements](#requirements)  
@@ -16,7 +22,7 @@
 [Speed](#speed)  
 [Default Filtering](#default-filtering)  
 [Call Filtering](#call-filtering)  
-[Additional Usage Options](#additional-usage-options)		  
+[Additional Usage Options](#additional-usage-options)         
 [File Formats](#file-formats)     
 [FAQ](#faq)     
 [Help](#help)       
@@ -61,7 +67,7 @@ To build, use Make:
 
 The commands will construct an executable file called **HipSTR** in the current directory, for which you can view detailed help information by typing 
 
-	./HipSTR --help
+    ./HipSTR --help
 
 ## Quick Start
 To run HipSTR in its most broadly applicable mode, run it on **all samples concurrently** using the syntax:
@@ -184,10 +190,8 @@ HipSTR sometimes automatically filters genotypes on a per-sample basis and will 
 | FLANK_INDEL_FRAC        | When genotyping is complete, HipSTR determines the maximum-likelihood alignment of each read relative to its sample's called alleles. If a large fraction of the resulting alignments have indels in the *flanks*, it's a strong indicator that they're misaligned and the sample's genotype is therefore ignored
 | LOW_FREQUENCY_ALT_FLANK | Flanking sequences identified by the assembly process in each sample are pooled together to generate all candidate haplotypes. As the number of haplotypes grows exponentially with the number of such sequences, HipSTR conserves time by discarding flanks that are only present in a few samples. If a sample's data supports a low-frequency flank, it is not genotyped. To adjust this frequency cutoff, use the **--min-flank-freq** option 
 
-
-
 ## Call Filtering
-Although **HipSTR** mitigates many of the most common sources of STR genotyping errors, it's still extremely important to filter the resulting VCFs to discard low quality calls. To facilitate this process, the VCF output contains various FORMAT and INFO fields that are usually indicators of problematic calls. The INFO fields indicate the aggregate data for a locus and, if certain flags are raised, may suggest that the entire locus should be discarded. In contrast, FORMAT fields are available on a per-sample basis for each locus and, if certain flags are raised, suggest that some samples' genotypes should be discarded. The list below includes some of these fields and how they can be informative:
+Although **HipSTR** mitigates many of the most common sources of STR genotyping errors, it's still extremely important to filter the resulting VCFs to discard low quality calls. To facilitate this process, the VCF output contains various FORMAT and INFO fields that are usually indicators of problematic calls. The INFO fields indicate the aggregate data for a locus and, if certain flags are raised, may suggest that the entire locus should be discarded. In contrast, FORMAT fields are available on a per-sample basis for each locus and, if certain flags are raised, suggest that some samples' genotypes should be discarded. The list below includes some of these fields and how they can be informative. The [dumpSTR](https://trtools.readthedocs.io/en/stable/source/dumpSTR.html) utility in the [TRTools package](https://trtools.readthedocs.io/en/stable/) can be used to filter VCFs from HipSTR (and other STR genotypers) using most of the fields below.
 
 #### INFO fields:  
 1. **DP**: Reports the total depth/number of informative reads for all samples at the locus. The mean coverage per-sample can obtained by dividing this value by the number of samples with non-missing genotypes. In general, genotypes with a low mean coverage are unreliable because the reads may only have captured one of the two alleles if an individual is heterozygous.
@@ -199,28 +203,7 @@ Although **HipSTR** mitigates many of the most common sources of STR genotyping 
 2. **DP**, **DSTUTTER** and **DFLANKINDEL**: Identical to the INFO field case, these fields are also available for each sample and can be used in the same way to identify problematic individual calls.  
 3. **AB** and **FS**: Quantify the log10 p-value of the allele bias and the Fisher strand bias, respectively. Large negative values indicate that the degree of bias observed is very unlikely to occur by random chance. In the case of **AB**, this indicates that the number of reads observed per allele is unlikely given the predicted genotype. In the case of **FS**, this indicates that there is a non-random association between sequencing strand and the allele each read is assigned to, suggesting that sequencing errors may be causing one of the reported alleles. Note that these fields are only applicable to diploid genotypes.   
 
-**So what thresholds do we suggest for each of these fields?** The answer really depends on the quality of the sequencing data, the ploidy of the chromosome and the downstream applications. However, we typically apply the following filters usings scripts we've provided in the **scripts** subdirectory of the HipSTR folder:
-
-```
-python scripts/filter_vcf.py  --vcf                   diploid_calls.vcf.gz
-                              --min-call-qual         0.9
-                              --max-call-flank-indel  0.15
-                              --max-call-stutter      0.15
-			      --min-call-allele-bias  -2
-			      --min-call-strand-bias  -2
-    
-python scripts/filter_haploid_vcf.py  --vcf                   haploid_calls.vcf.gz
-                                      --min-call-qual         0.9
-                                      --max-call-flank-indel  0.15
-                                      --max-call-stutter      0.15
-```
-
-The resulting VCF, which is printed to the standard output stream, will omit calls on a sample-by-sample basis in which any of the following conditions are met: i) the posterior < 90%, ii) more than 15% of reads have a flank indel or iii) more than 15% of reads have a stutter artifact. For the diploid VCF, these filters will also remove genotypes with an allele bias or Fisher strand bias p-value less than 0.01 (10^-2). Calls for samples failing these criteria will be replaced with a "." missing symbol as per the VCF specification. For more filtering options, type either
-
-```
-python scripts/filter_vcf.py -h
-python scripts/filter_haploid_vcf.py -h
-```
+**So what thresholds do we suggest for each of these fields?** The answer really depends on the quality of the sequencing data, the ploidy of the chromosome and the downstream applications. As a guide, we often use dumpSTR options `--hipstr-min-call-Q 0.9 --hipstr-max-call-flank-indel 0.15 --hipstr-max-call-stutter 0.15` as a starting point.
 
 ## Additional Usage Options
 
@@ -234,15 +217,15 @@ python scripts/filter_haploid_vcf.py -h
 | **snp-vcf**    phased_snps.vcf.gz     | Bgzipped input VCF file containing phased SNP genotypes for the samples to be genotyped. These SNPs will be used to physically phase STRs<br> **Why? You have available phased SNP genotypes**  
 | **bam-samps**     list_of_read_groups | Comma separated list of samples in same order as BAM files. <br> Assign each read the sample corresponding to its file. By default, <br> each read must have an RG tag and and the sample is determined from the SM field <br> **Why? Your BAM file RG tags don't have an SM field**  
 | **bam-libs**      list_of_read_groups | Comma separated list of libraries in same order as BAM files. <br> Assign each read the library corresponding to its file. By default, <br> each read must have an RG tag and and the library is determined from the LB field <br> NOTE: This option is required when --bam-samps has been specified <br> **Why? Your BAM file RG tags don't have an LB tag**  
-| **lib-field**   rg_field                        | Read group field used to assign each read a library. By default, <br> the library is determined from the LB field associated with RG <br> **Why? Your BAM file RG tags don't have an LB tag and you want to use a different tag instead (e.g. SM)** 	
+| **lib-field**   rg_field                        | Read group field used to assign each read a library. By default, <br> the library is determined from the LB field associated with RG <br> **Why? Your BAM file RG tags don't have an LB tag and you want to use a different tag instead (e.g. SM)**     
 | **def-stutter-model**                   | For each locus, use a stutter model with PGEOM=0.9 and UP=DOWN=0.05 for in-frame artifacts and PGEOM=0.9 and UP=DOWN=0.01 for out-of-frame artifacts <br> **Why? You have too few samples for stutter estimation and don't have stutter models**  
-| **min-reads** num_reads                           | 	Minimum total reads required to genotype a locus (Default = 100) <br> **Why? Refer to the discussion [above](#data-requirements)**  
+| **min-reads** num_reads                           |   Minimum total reads required to genotype a locus (Default = 100) <br> **Why? Refer to the discussion [above](#data-requirements)**  
 |**output-filters**                        | Write why individual calls were filtered to the VCF (Default = False)
 
 
 This list is comprised of the most useful and frequently used additional options, but is not all encompassing. For a complete list of options, please type
 
-	./HipSTR --help
+    ./HipSTR --help
 
 <a id="aln-viz"></a>
 
@@ -250,13 +233,13 @@ This list is comprised of the most useful and frequently used additional options
 When deciphering and inspecting STR calls, it's extremely useful to visualize the supporting reads. HipSTR facilitates this through the **viz-out** option, which writes a compressed file containing alignments for each call that can be readily visualized using the **VizAln** command included in HipSTR's main directory. If you're interested in visualizing alignments, you first need to index the file using tabix. 
 For example, if you ran HipSTR with the option `--viz-out aln.viz.gz`, you should use the command
 
-	tabix -p bed aln.viz.gz
+    tabix -p bed aln.viz.gz
 
 to generate a [tabix](http://www.htslib.org/doc/tabix.html) index for the file so that we can rapidly extract alignments for a locus of interest. This command only needs to be run once after the file has been generated. 
 
 You could then visualize the calls for sample *NA12878* at locus *chr1 3784267* using the command
 
-	./VizAln aln.viz.gz chr1 3784267 NA12878
+    ./VizAln aln.viz.gz chr1 3784267 NA12878
 
 This command will automatically open a rendering of the alignments in your browser and might look something like:
 ![Read more words!](https://raw.githubusercontent.com/HipSTR-Tool/HipSTR-tutorial/master/viz_NA12878.png)
@@ -264,13 +247,13 @@ The top bar represents the reference sequence and the red text indicates the nam
 
 If we wanted to inspect all calls for the same locus, we could  use the command 
 
-	./VizAln aln.viz.gz chr1 3784267
+    ./VizAln aln.viz.gz chr1 3784267
 
 To facilitate rendering these images for publications, we've also created a similar script that converts
 these alignments into a PDF. This script can only be applied to one sample at a time, but the image above
 can be generated in a file alignments.pdf as follows:
 
-	./VizAlnPdf aln.viz.gz chr1 3784267 NA12878 alignments 1
+    ./VizAlnPdf aln.viz.gz chr1 3784267 NA12878 alignments 1
 
 NOTE: Because the **viz-out** file can become fairly large if you're genotyping thousands of loci or thousands of samples, in some scenarios it may be best to rerun HipSTR using this option on the subset of loci which you wish to visualize.
 
@@ -280,11 +263,11 @@ NOTE: Because the **viz-out** file can become fairly large if you're genotyping 
 ### BAM/CRAM files
 HipSTR requires [BAM/CRAM](https://samtools.github.io/hts-specs/SAMv1.pdf) files produced by any indel-sensitive aligner. These files must have been sorted by position using the `samtools sort` command and then indexed using `samtools index`. To associate a read with its sample of interest, HipSTR uses read group information in the BAM/CRAM header lines. These *@*RG lines must contain an *ID* field, an *LB* field indicating the library and an *SM* field indicating the sample. For example, if a BAM/CRAM contained the following header line
 
-	@RG     ID:RUN1 LB:ERR12345        SM:SAMPLE789
+    @RG     ID:RUN1 LB:ERR12345        SM:SAMPLE789
 
 an alignment with the RG tag 
 
-	RG:Z:RUN1
+    RG:Z:RUN1
 
 will be associated with sample *SAMPLE789* and library *ERR12345*. In this manner, HipSTR can analyze BAMs/CRAMs containing more than one sample and/or more than one library and can handle cases in which a single sample's reads are spread across multiple files.
 
@@ -432,7 +415,7 @@ Each of the stutter parameters is defined as follows:
 HipSTR only genotypes a region if at least **min-reads** and at most **max-reads** overlap the STR. It then attempts to learn the stutter model (if appropriate), build haplotypes for the region and perform genotyping. If any of these stages is unsuccessful, it skips the STR and continues on to the next region. The **log** file contains the failure reason for each failed region as well as an overall summary of why regions were skipped at the end of the log.      
 4. **How can I run HipSTR if I have too few samples to learn stutter models and don't have external ones?**     
 In this scenario, you can run HipSTR with **def-stutter-model**. Invoking this option will disable the algorithm it uses to learn stutter models. Instead, HipSTR will use the same fixed stutter model to genotype every locus. We don't recommend using this option unless necessary, as genotypes are more accurate if you learn a specific model for each STR.
-5. **What sequencing platforms does HipSTR support?**		
+5. **What sequencing platforms does HipSTR support?**       
 HipSTR was designed to analyze **Illumina** sequencing data. We do not recommend running it on PacBio or Oxford Nanopore data, as the difference in error profiles will be problematic 
 
 ## Help
@@ -445,7 +428,7 @@ If you're having trouble getting your analysis up and running:
 If you encounter a bug/issue or have a feature request:     
 
      i.  File an issue on GitHub (https://github.com/tfwillems/HipSTR)
-	ii. Email us at hipstrtool@gmail.com
+    ii. Email us at hipstrtool@gmail.com
 
 ## Citation
 If you found HipSTR useful, we would appreciate it if you could cite our manuscript describing HipSTR and its applications: **[Genome-wide profiling of heritable and de novo STR variations](https://www.nature.com/articles/nmeth.4267)**

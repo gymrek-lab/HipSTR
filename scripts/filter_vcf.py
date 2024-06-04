@@ -140,7 +140,10 @@ def main():
         "--keep-all-alleles"        : "Don't remove any ALT alleles, even if no unfiltered samples have the corresponding GT. (Default = Remove unless VCF contains likelihoods",
     }
 
-    description = """Apply the provided set of sample-level (i.e. call-level) and locus-level filters to the input VCF file.
+    description = """
+    Note: this script is deprecated. Please use dumpSTR from TRTools instead: https://trtools.readthedocs.io/en/stable/index.html
+
+    Apply the provided set of sample-level (i.e. call-level) and locus-level filters to the input VCF file.
     STR loci that fail locus-level filters are entirely removed from the VCF. For the remaining STRs, filtered samples are masked as missing.
     All INFO fields are updated accordingly to refer to the unfiltered sample set. The resulting filtered VCF is output to stdout
     """
