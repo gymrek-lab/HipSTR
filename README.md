@@ -5,7 +5,7 @@ We have also developed [TRTools](https://trtools.readthedocs.io/en/stable/index.
 
 For questions on this HipSTR fork, please contact mgymrek@ucsd.edu, or feel free to submit issues or pull requests for suggested changes.
 
-**H**aplotype **i**nference and **p**hasing for **S**hort **T**andem **R**epeats 
+## **H**aplotype **i**nference and **p**hasing for **S**hort **T**andem **R**epeats 
 
 ![HipSTR icon!](https://raw.githubusercontent.com/tfwillems/HipSTR/master/img/HipSTR_icon_small.png)    
 
